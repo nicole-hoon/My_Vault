@@ -1,0 +1,54 @@
+// 스프레드시트가 열릴 때 상단에 맞춤 메뉴를 생성합니다.
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('★ 학생 조회 메뉴')
+    .addItem('수행평가 조회 사이드바', 'showSidebar')
+    .addToUi();
+}
+
+// 사이드바를 화면에 표시합니다.
+function showSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
+      .setTitle('학생 수행평가 조회')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+// 사이드바에서 입력한 이동반과 학번으로 학생 데이터를 검색합니다.
+function searchStudent(classNum, studentId) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('성적'); // '성적' 탭 기준
+  if (!sheet) {
+    return { success: false, message: "'성적' 이름의 시트 탭을 찾을 수 없습니다." };
+  }
+  
+  var data = sheet.getDataRange().getValues();
+  
+  // 데이터의 각 열 인덱스 설정 (0부터 시작)
+  // 이동반(A)=0, 학번(B)=1, 이름(C)=2, 수행1차(D)=3, 수행2차(E)=4, 수행3차(F)=5
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    
+    // 이동반과 학번이 모두 일치하는지 확인 (문자열로 변환하여 비교)
+    if (String(row[0]).trim() === String(classNum).trim() && String(row[1]).trim() === String(studentId).trim()) {
+      var p1 = Number(row[3]) || 0;
+      var p2 = Number(row[4]) || 0;
+      var p3 = Number(row[5]) || 0;
+      var total = p1 + p2 + p3; // 수행 = 수행1차 + 수행2차 + 수행3차
+      
+      return {
+        success: true,
+        data: {
+          classNum: row[0],
+          studentId: row[1],
+          name: row[2],
+          perf1: p1,
+          perf2: p2,
+          perf3: p3,
+          total: total
+        }
+      };
+    }
+  }
+  
+  return { success: false, message: "일치하는 학생 정보가 없습니다." };
+}
